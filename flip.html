@@ -275,6 +275,8 @@ body.wide .app { max-width: 1100px; padding: 20px 32px 32px; }
       <div class="row"><span>Card code</span><span class="code" id="vCode">XMAS-0000</span></div>
       <div class="row"><span>Round 1 · flips and time</span><strong id="vMoves">0</strong></div>
       <div class="row" id="tbRow" hidden><span>Round 2 · number total</span><strong id="vTb">0</strong></div>
+      <div class="row" id="titleRow" hidden><span>Round 2 · your festive title</span><strong id="vTitle"></strong></div>
+      <p id="titleBlurb" class="hint" style="color:#5B6B5F" hidden></p>
     </div>
     <p class="lead">Keep this screen open for the countdown on the big screen. Fewest flips in round 1 wins a free drink. Got a bingo line? Play round 2 when the host says go.</p>
     <div class="actions">
@@ -282,7 +284,7 @@ body.wide .app { max-width: 1100px; padding: 20px 32px 32px; }
       <button class="btn ghost" id="againBtn" type="button">Play again, just for fun</button>
     </div>
     <div class="tbconfirm" id="tbConfirm" hidden>
-      <p><strong>Round 2 is for kindness bingo finishers.</strong> Show your bingo line to the host, then start when they say go. You start at 10 and pick one of two face-down cards five times. Each card adds, subtracts, multiplies or divides your total. Highest total wins a free pizza. You get one go, and it’s saved as you play.</p>
+      <p><strong>Round 2 is for kindness bingo finishers.</strong> Show your bingo line to the host, then start when they say go. You start at 10 and pick one of two face-down cards five times. Each card adds, subtracts, multiplies or divides your total. Highest total wins a free pizza, and everyone who plays gets a festive title. You get one go, and it’s saved as you play.</p>
       <div class="actions"><button class="btn small" id="tbYes" type="button">Start round 2</button><button class="btn ghost" id="tbNo" type="button">Not yet</button></div>
     </div>
     <p class="hint" id="lockNote">Your round 1 score is locked in. Playing again for fun won’t change it.</p>
@@ -364,6 +366,15 @@ body.wide .app { max-width: 1100px; padding: 20px 32px 32px; }
 const PRIZES = [
   { name: "A Christmas cookie", blurb: "Yours to collect at the end of today’s meeting.", weight: 1, icon: "cookie" },
   { name: "A chocolate", blurb: "Yours to collect at the end of today’s meeting.", weight: 1, icon: "choc" }
+];
+
+// Fun titles for round 2 players (no cost). The highest total also wins a free pizza.
+const TITLES = [
+  { name: "Gingerbread genius", blurb: "Sharp, sweet and just a little spicy." },
+  { name: "Pavlova pro", blurb: "Crisp under pressure, soft in the middle." },
+  { name: "Chief chook wrangler", blurb: "Rounds up numbers like nobody else." },
+  { name: "Honorary sensory panellist", blurb: "Your palate and your maths are both in fine form." },
+  { name: "Elf of the year", blurb: "Quick hands and a kind heart." }
 ];
 
 // ---------- The Christmas table: six pairs, each with a holiday tip ----------
@@ -511,7 +522,7 @@ function pickNumber(k) {
   nr.total = to;
   const last = nr.log.length >= NR_TURNS;
   if (!last) nr.cards = dealPair();
-  if (last) { state.tb = { total: to, at: Date.now() }; }
+  if (last) { state.tb = { total: to, at: Date.now(), title: Math.floor(Math.random() * TITLES.length) }; }
   saveLocal();
   const el = $("nr-" + k), other = $("nr-" + (1 - k));
   el.classList.add("up"); other.classList.add("up", "other");
@@ -557,6 +568,9 @@ function showVoucher() {
   $("vMoves").textContent = m.flips + " · " + fmt1(m.ms);
   $("tbRow").hidden = !state.tb;
   if (state.tb) $("vTb").textContent = fmtN(state.tb.total);
+  const tt = state.tb && TITLES[state.tb.title];
+  $("titleRow").hidden = !tt; $("titleBlurb").hidden = !tt;
+  if (tt) { $("vTitle").textContent = tt.name; $("titleBlurb").textContent = tt.blurb + " Highest total wins the free pizza."; }
   $("tbBtn").hidden = !!state.tb; $("tbConfirm").hidden = true;
   $("tbBtn").textContent = state.nr ? "Continue round 2" : "Play round 2 (bingo finishers)";
   $("lockNote").textContent = state.tb ? "Both scores are locked in. Playing again for fun won’t change them." : "Your round 1 score is locked in. Playing again for fun won’t change it.";

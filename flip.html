@@ -126,6 +126,15 @@ input[type="text"]:focus { outline: none; border-color: var(--mint); }
 .check input { width: 22px; height: 22px; accent-color: #F2C14E; }
 .r2 { border-top: 1px solid var(--pine-2); padding-top: 20px; display: grid; gap: 14px; }
 .r2how li { font-size: 17px; }
+.live { background: rgba(251,246,236,0.06); border: 1px solid var(--pine-2); border-radius: 24px; padding: 20px; display: grid; gap: 14px; }
+.livehead { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.livegrid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; }
+.livecol { display: grid; gap: 8px; align-content: start; }
+.lb td.r { width: 40px; }
+.lb tr.top td { background: rgba(242,193,78,0.16); }
+.badge { display: inline-block; margin-left: 8px; font-size: 12px; font-weight: 700; background: var(--gold); color: var(--ink); border-radius: 999px; padding: 2px 8px; vertical-align: middle; }
+.empty { color: var(--soft); font-size: 15px; padding: 10px 0; }
+@media (max-width: 760px) { .livegrid { grid-template-columns: 1fr; } }
 .tbconfirm { background: rgba(242,193,78,0.12); border: 1px solid rgba(242,193,78,0.6); border-radius: 14px; padding: 12px 14px; display: grid; gap: 10px; color: var(--cream); font-size: 15px; }
 .support { font-size: 13px; color: var(--soft); border-top: 1px solid var(--pine-2); padding-top: 12px; margin-top: auto; }
 .support b { color: var(--cream); font-weight: 700; }
@@ -211,9 +220,10 @@ body.wide .app { max-width: 1100px; padding: 20px 32px 32px; }
       <li><b>3</b><span>Keep your score card open on your phone for the countdowns on the big screen.</span></li>
     </ol>
         <div class="field" id="nameField">
-      <label for="nameInput">Your first name (for your score card)</label>
+      <label for="nameInput">Your first name (shown on the leaderboard)</label>
       <input type="text" id="nameInput" maxlength="24" autocomplete="given-name" placeholder="e.g. Sam">
-      <p class="hint">Stays on your phone only.</p>
+      <label class="check"><input type="checkbox" id="bingoInput"> I have a line on my kindness bingo card</label>
+      <p class="hint">Your name, scores and bingo tick appear on the live leaderboard on the big screen.</p>
     </div>
     <button class="btn" id="startBtn" type="button">Start flipping</button>
     <p class="hint">Everyone gets a cookie or a chocolate too, so nobody leaves empty-handed.</p>
@@ -288,6 +298,15 @@ body.wide .app { max-width: 1100px; padding: 20px 32px 32px; }
         <a class="btn ghost small" href="#">Back to the game</a>
       </div>
     </div>
+    <div class="live">
+      <div class="livehead"><h2>Live leaderboard</h2><p class="status" id="liveStatus">Connecting…</p></div>
+      <div class="livegrid">
+        <div class="livecol"><p class="kicker">Round 1 · fewest flips</p><table class="lb"><thead><tr><th>#</th><th>Player</th><th>Flips</th><th>Time</th></tr></thead><tbody id="r1Rows"></tbody></table></div>
+        <div class="livecol"><p class="kicker">Round 2 · highest total · bingo finishers</p><table class="lb"><thead><tr><th>#</th><th>Player</th><th>Total</th></tr></thead><tbody id="r2Rows"></tbody></table></div>
+      </div>
+      <div class="toolbar"><button class="btn ghost small" id="freshBtn" type="button">Start fresh on this screen</button><span class="status" id="freshNote"></span></div>
+    </div>
+    <p class="hint">No live scores? The stand-up countdown below works without them.</p>
     <div class="podium">
       <div class="pod first"><p class="place">Step 1</p><p class="who">Everyone stand up</p><p class="num">Keep your result screen handy.</p></div>
       <div class="pod"><p class="place">Step 2</p><p class="who">Sit when you’re out</p><p class="num">Sit down when the number drops below your flips.</p></div>
@@ -386,7 +405,13 @@ function fmt(ms) { const s = Math.round((ms || 0) / 1000); return Math.floor(s /
 function fmt1(ms) { const t = Math.round((ms || 0) / 100) / 10, m = Math.floor(t / 60), sec = (t - m * 60).toFixed(1); return m + ":" + (sec < 10 ? "0" : "") + sec; }
 function shuffle(a) { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
 function makeCode() { const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s = ""; for (let i = 0; i < 4; i++) s += c[Math.floor(Math.random() * c.length)]; return "XMAS-" + s; }
-function saveLocal() { try { localStorage.setItem(STORE, JSON.stringify({ name: state.name, mine: state.mine, tb: state.tb, nr: state.nr })); } catch (e) {} }
+function saveLocal() { try { localStorage.setItem(STORE, JSON.stringify({ name: state.name, mine: state.mine, tb: state.tb, nr: state.nr, bingo: !!state.bingo })); } catch (e) {} }
+function pushScore() {
+  if (!state.mine) return;
+  const data = { name: (state.name || "Guest").slice(0, 24), flips: state.mine.flips, ms: Math.round(state.mine.ms), r2: state.tb ? state.tb.total : null, bingo: !!state.bingo || !!state.tb || !!state.nr, at: state.mine.at };
+  window.pendingScore = data;
+  if (window.fb && window.fb.save) window.fb.save(data);
+}
 function loadLocal() { try { return JSON.parse(localStorage.getItem(STORE) || "null"); } catch (e) { return null; } }
 function validPlay(d) { return d && Number.isInteger(d.prize) && d.prize >= 0 && d.prize < PRIZES.length && typeof d.flips === "number" && typeof d.ms === "number"; }
 function pickPrize() { const total = PRIZES.reduce((t, p) => t + p.weight, 0); let r = Math.random() * total; for (let i = 0; i < PRIZES.length; i++) { r -= PRIZES[i].weight; if (r < 0) return i; } return 0; }
@@ -439,7 +464,7 @@ function flip(i) {
     [a, b].forEach(k => { const c = $("card-" + k); c.classList.remove("up"); c.classList.add("done"); c.setAttribute("aria-label", p.name + ", matched"); });
     $("tip").className = "tip"; $("tip").innerHTML = ICONS[p.id] + "<p><strong>" + p.name + ".</strong> " + p.tip + "</p>";
     hud();
-    if (state.done.length === state.deck.length) { clearInterval(tick); tick = null; state.ms = Date.now() - state.startedAt; hud(); setTimeout(toPresents, 900); }
+    if (state.done.length === state.deck.length) { clearInterval(tick); tick = null; state.ms = Date.now() - state.startedAt; hud(); if (mode === "main" && !state.mine) { state.mine = { prize: pickPrize(), code: makeCode(), flips: state.moves, ms: state.ms, at: Date.now(), fresh: true }; saveLocal(); pushScore(); } setTimeout(toPresents, 900); }
   } else {
     lock = true;
     [a, b].forEach(k => $("card-" + k).classList.add("miss"));
@@ -496,7 +521,7 @@ function pickNumber(k) {
   $("nrTotal").textContent = fmtN(to);
   setTimeout(() => {
     lock = false;
-    if (last) { state.nr = null; saveLocal(); burst(); showVoucher(); }
+    if (last) { state.nr = null; state.bingo = true; saveLocal(); pushScore(); burst(); showVoucher(); }
     else renderNumbers();
   }, 1300);
 }
@@ -517,11 +542,10 @@ function toPresents() {
 }
 async function unwrap(k) {
   if (lock) return; lock = true;
-  const first = !state.mine;
-  if (first) {
-    state.mine = { prize: pickPrize(), code: makeCode(), flips: state.moves, ms: state.ms, at: Date.now() };
-    saveLocal();
-  }
+  const first = !state.mine || state.mine.fresh;
+  if (!state.mine) { state.mine = { prize: pickPrize(), code: makeCode(), flips: state.moves, ms: state.ms, at: Date.now() }; pushScore(); }
+  if (state.mine.fresh) delete state.mine.fresh;
+  saveLocal();
   const pz = PRIZES[state.mine.prize], el = $("prize-" + k);
   el.querySelector(".front").innerHTML = ICONS[pz.icon] + '<span class="name">' + pz.name + "</span>";
   el.classList.add("up");
@@ -542,11 +566,36 @@ function showVoucher() {
   show("won");
 }
 
+// ---------- Live leaderboard (filled by the Firebase module below) ----------
+const FRESH = "festive-flip-board-from";
+let liveScores = [], liveState = "connecting";
+function freshFrom() { try { return Number(localStorage.getItem(FRESH) || 0); } catch (e) { return 0; } }
+function cleanName(n) { return String(n || "Guest").slice(0, 24); }
+function renderLive() {
+  const from = freshFrom();
+  const list = liveScores.filter(x => typeof x.flips === "number" && typeof x.ms === "number" && (x.at || 0) >= from);
+  $("liveStatus").textContent = liveState === "live" ? list.length + (list.length === 1 ? " player" : " players") + " · updates live" : liveState === "offline" ? "Can’t reach the live scores right now. Use the countdown below." : "Connecting…";
+  const r1 = list.slice().sort((a, b) => a.flips - b.flips || a.ms - b.ms);
+  const r2 = list.filter(x => typeof x.r2 === "number").sort((a, b) => b.r2 - a.r2);
+  const fill = (id, rows, cols, emptyText) => {
+    const tb = $(id); tb.innerHTML = "";
+    if (!rows.length) { const tr = document.createElement("tr"); const td = document.createElement("td"); td.colSpan = cols; td.className = "empty"; td.textContent = emptyText; tr.appendChild(td); tb.appendChild(tr); return; }
+    rows.forEach(r => tb.appendChild(r));
+  };
+  const row = (i, cells, top) => { const tr = document.createElement("tr"); if (top) tr.className = "top"; const rk = document.createElement("td"); rk.className = "r"; rk.textContent = i + 1; tr.appendChild(rk); cells.forEach(c => { const td = document.createElement("td"); if (c instanceof Node) td.appendChild(c); else td.textContent = c; tr.appendChild(td); }); return tr; };
+  const nameCell = x => { const f = document.createDocumentFragment(); f.append(cleanName(x.name)); if (x.bingo) { const b = document.createElement("span"); b.className = "badge"; b.textContent = "Bingo"; f.appendChild(b); } return f; };
+  fill("r1Rows", r1.map((x, i) => row(i, [nameCell(x), x.flips, fmt1(x.ms)], i === 0)), 4, "Waiting for the first finisher…");
+  fill("r2Rows", r2.map((x, i) => row(i, [cleanName(x.name), fmtN(x.r2)], i === 0)), 3, "Round 2 scores appear here.");
+  if (r1[0] && !$("winnerInput").value) { $("winnerInput").placeholder = cleanName(r1[0].name); }
+  if (r2[0] && !$("winner2Input").value) { $("winner2Input").placeholder = cleanName(r2[0].name); }
+}
+window.liveUpdate = (scores, st) => { if (scores) liveScores = scores; if (st) liveState = st; renderLive(); };
+
 // ---------- Flip-off host view ----------
 function setCount(n) { count = Math.max(1, Math.min(60, n)); $("bigNum").textContent = count; }
 function reveal(round) {
   const r2 = round === 2;
-  const name = $(r2 ? "winner2Input" : "winnerInput").value.trim() || "Our winner";
+  const inp = $(r2 ? "winner2Input" : "winnerInput"); const name = inp.value.trim() || (inp.placeholder !== "Type the winner’s name" ? inp.placeholder : "") || "Our winner";
   $("revealIcon").innerHTML = r2 ? ICONS.pizza : ICONS.glass;
   $("revealKicker").textContent = r2 ? "Round 2 · top of the numbers" : "Round 1 · top of the pecking order";
   $("revealName").textContent = name;
@@ -572,12 +621,12 @@ function burst() {
 // ---------- Start ----------
 function start() {
   const saved = loadLocal();
-  if (saved) { state.name = saved.name || ""; if (saved.mine && validPlay(saved.mine)) state.mine = saved.mine; if (saved.tb && typeof saved.tb.total === "number") state.tb = saved.tb; if (saved.nr && Array.isArray(saved.nr.log) && typeof saved.nr.total === "number" && !state.tb) state.nr = saved.nr; }
-  $("nameInput").value = state.name;
+  if (saved) { state.name = saved.name || ""; state.bingo = !!saved.bingo; if (saved.mine && validPlay(saved.mine)) state.mine = saved.mine; if (saved.tb && typeof saved.tb.total === "number") state.tb = saved.tb; if (saved.nr && Array.isArray(saved.nr.log) && typeof saved.nr.total === "number" && !state.tb) state.nr = saved.nr; }
+  $("nameInput").value = state.name; $("bingoInput").checked = !!state.bingo;
   $("heroFace1").innerHTML = ICONS.ham; $("heroFace2").innerHTML = ICONS.chook;
   if (state.mine) $("startBtn").textContent = "See my score";
   $("startBtn").addEventListener("click", () => {
-    const typed = $("nameInput").value.trim().slice(0, 24); if (typed) state.name = typed; saveLocal();
+    const typed = $("nameInput").value.trim().slice(0, 24); if (typed) state.name = typed; state.bingo = $("bingoInput").checked; saveLocal(); if (state.mine) pushScore();
     if (state.mine) { showVoucher(); return; }
     startRound("main");
   });
@@ -588,6 +637,8 @@ function start() {
   $("revealBtn").addEventListener("click", () => reveal(1));
   $("reveal2Btn").addEventListener("click", () => reveal(2));
   $("revealClose").addEventListener("click", () => $("reveal").classList.remove("on"));
+  $("freshBtn").addEventListener("click", () => { try { localStorage.setItem(FRESH, String(Date.now())); } catch (e) {} $("freshNote").textContent = "Showing only scores from now on, on this screen."; renderLive(); });
+  renderLive();
   $("downBtn").addEventListener("click", () => setCount(count - 1));
   $("upBtn").addEventListener("click", () => setCount(count + 1));
   $("resetBtn").addEventListener("click", () => setCount(20));
@@ -595,6 +646,43 @@ function start() {
   route();
 }
 start();
+</script>
+<script type="module">
+// Live leaderboard: Firebase (Firestore + anonymous sign-in). The game works without it.
+const firebaseConfig = {
+  apiKey: "AIzaSyC1C0lefGESF86KVEst1DnQW7MrU4N70vk",
+  authDomain: "christmas-games-cae6b.firebaseapp.com",
+  projectId: "christmas-games-cae6b",
+  storageBucket: "christmas-games-cae6b.firebasestorage.app",
+  messagingSenderId: "155490789416",
+  appId: "1:155490789416:web:007550a9e9200a17fcad1d"
+};
+const V = "10.12.2";
+try {
+  const { initializeApp } = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-app.js`);
+  const { getAuth, signInAnonymously } = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-auth.js`);
+  const { getFirestore, doc, setDoc, collection, onSnapshot } = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-firestore.js`);
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app), db = getFirestore(app);
+  const cred = await signInAnonymously(auth);
+  const uid = cred.user.uid;
+  let last = "";
+  window.fb = {
+    save: async (data) => {
+      const key = JSON.stringify(data); if (key === last) return; last = key;
+      try { await setDoc(doc(db, "scores", uid), data); } catch (e) { last = ""; console.warn("Score not saved", e); }
+    }
+  };
+  if (window.pendingScore) window.fb.save(window.pendingScore);
+  {
+    onSnapshot(collection(db, "scores"), snap => {
+      window.liveUpdate && window.liveUpdate(snap.docs.map(d => d.data()), "live");
+    }, () => window.liveUpdate && window.liveUpdate(null, "offline"));
+  }
+} catch (e) {
+  console.warn("Live leaderboard unavailable", e);
+  window.liveUpdate && window.liveUpdate(null, "offline");
+}
 </script>
 </body>
 </html>

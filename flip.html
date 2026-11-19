@@ -217,7 +217,7 @@ body.wide .app { max-width: 1100px; padding: 20px 32px 32px; }
     <ol class="how">
       <li><b>1</b><span>Round 1, everyone: fewest flips wins a free drink. With a bingo line it’s a drink of your choice; without one, a soft drink.</span></li>
       <li><b>2</b><span>Round 2, bingo finishers only: build the highest total with + − × ÷ cards to win a free pizza.</span></li>
-      <li><b>3</b><span>Keep your score card open on your phone for the countdowns on the big screen.</span></li>
+      <li><b>3</b><span>Everyone unwraps a present: a cookie or a chocolate. Keep your score card open for the big screen.</span></li>
     </ol>
         <div class="field" id="nameField">
       <label for="nameInput">Your first name (shown on the leaderboard)</label>
@@ -226,7 +226,7 @@ body.wide .app { max-width: 1100px; padding: 20px 32px 32px; }
       <p class="hint">Your name, scores and bingo tick appear on the live leaderboard on the big screen.</p>
     </div>
     <button class="btn" id="startBtn" type="button">Start flipping</button>
-    <p class="hint">Everyone gets a cookie or a chocolate too, so nobody leaves empty-handed.</p>
+    <p class="hint">Everyone gets a cookie or a chocolate, so nobody leaves empty-handed.</p>
   </section>
 
   <section class="screen" id="play" aria-labelledby="t-play">
@@ -248,7 +248,7 @@ body.wide .app { max-width: 1100px; padding: 20px 32px 32px; }
   <section class="screen" id="prize" aria-labelledby="t-prize">
     <p class="kicker">Round 2</p>
     <h2 id="t-prize">Table set. Unwrap a present.</h2>
-    <p class="lead" id="prizeLead">Each present hides your festive title.</p>
+    <p class="lead" id="prizeLead">Each present hides a cookie or a chocolate.</p>
     <div class="prizes" id="prizes"></div>
   </section>
 
@@ -268,7 +268,7 @@ body.wide .app { max-width: 1100px; padding: 20px 32px 32px; }
 
   <section class="screen" id="won" aria-labelledby="t-won">
     <div class="voucher" id="voucher">
-      <p class="kicker">Score card · 11 December</p>
+      <p class="kicker">Your treat and score card · 11 December</p>
       <h2 id="t-won">Prize</h2>
       <p id="wonBlurb"></p>
       <div class="row"><span>Name</span><strong id="vName">Guest</strong></div>
@@ -360,13 +360,10 @@ body.wide .app { max-width: 1100px; padding: 20px 32px 32px; }
 <canvas id="confetti" aria-hidden="true"></canvas>
 
 <script>
-// ---------- Edit here: festive titles revealed in the presents (no cost). The free drink goes to the flip-off winner. ----------
+// ---------- Edit here: the treat each player unwraps (everyone gets one). Round 1 winner also gets a free drink; round 2 winner a free pizza. ----------
 const PRIZES = [
-  { name: "Gingerbread genius", blurb: "Sharp, sweet and just a little spicy.", weight: 1, icon: "cookie" },
-  { name: "Pavlova pro", blurb: "Crisp under pressure, soft in the middle.", weight: 1, icon: "pav" },
-  { name: "Chief chook wrangler", blurb: "Rounds up pairs like nobody else.", weight: 1, icon: "chook" },
-  { name: "Honorary sensory panellist", blurb: "Your palate and your memory are both in fine form.", weight: 1, icon: "ham" },
-  { name: "Elf of the year", blurb: "Quick hands and a kind heart.", weight: 1, icon: "star" }
+  { name: "A Christmas cookie", blurb: "Yours to collect at the end of today’s meeting.", weight: 1, icon: "cookie" },
+  { name: "A chocolate", blurb: "Yours to collect at the end of today’s meeting.", weight: 1, icon: "choc" }
 ];
 
 // ---------- The Christmas table: six pairs, each with a holiday tip ----------
@@ -528,7 +525,7 @@ function pickNumber(k) {
 
 // ---------- Round 2: presents ----------
 function toPresents() {
-  $("prizeLead").textContent = rating(state.moves) + (state.mine ? " Your score is already locked in, so unwrap any present to see your title again." : " Each present hides your festive title.");
+  $("prizeLead").textContent = rating(state.moves) + (state.mine ? " Your treat is already locked in, so unwrap any present to see it again." : " Each present hides a cookie or a chocolate.");
   const box = $("prizes"); box.innerHTML = "";
   for (let k = 0; k < 3; k++) {
     const b = document.createElement("button");

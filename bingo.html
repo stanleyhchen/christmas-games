@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kindness bingo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Nunito+Sans:wght@400;600;700&display=swap">
+<style>
+/* Layout idea: a bingo card you carry for a fortnight. Pine table, cream card, berry stamps that land with a thud; gold line when you hit bingo. Single theme by choice. */
+:root {
+  --pine: #123524;
+  --pine-2: #1C4A33;
+  --cream: #FBF6EC;
+  --ink: #1F2A22;
+  --gold: #F2C14E;
+  --berry: #C8423A;
+  --mint: #9FD8B8;
+  --soft: #CFE3D6;
+  --display: 'Bricolage Grotesque', 'Trebuchet MS', sans-serif;
+  --body: 'Nunito Sans', 'Segoe UI', Arial, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body { background: radial-gradient(circle at 15% 5%, rgba(242,193,78,0.14), transparent 40%), radial-gradient(circle at 90% 95%, rgba(200,66,58,0.18), transparent 45%), var(--pine); color: var(--soft); font-family: var(--body); font-size: 16px; line-height: 1.45; -webkit-tap-highlight-color: transparent; }
+.app { max-width: 520px; margin: 0 auto; min-height: 100%; padding: 20px 16px 28px; display: flex; flex-direction: column; gap: 16px; }
+body.wide .app { max-width: 1100px; padding: 20px 32px 32px; }
+h1, h2 { font-family: var(--display); color: var(--cream); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h1 { font-size: 38px; line-height: 1.02; font-weight: 800; }
+h2 { font-size: 26px; line-height: 1.1; font-weight: 800; }
+p { margin: 0; }
+.kicker { font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+.lead { font-size: 16px; max-width: 42ch; }
+.hint { font-size: 13px; opacity: 0.9; }
+.screen { display: none; flex-direction: column; gap: 16px; }
+.screen.on { display: flex; }
+.btn { appearance: none; border: 0; font-family: var(--display); font-weight: 800; font-size: 17px; padding: 13px 20px; border-radius: 999px; background: var(--gold); color: var(--ink); cursor: pointer; box-shadow: 0 4px 0 #B8862A; text-decoration: none; display: inline-block; }
+.btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #B8862A; }
+.btn.ghost { background: transparent; color: var(--cream); border: 2px solid var(--soft); box-shadow: none; font-size: 15px; padding: 10px 16px; }
+.btn:focus-visible, .sq:focus-visible { outline: 3px solid var(--mint); outline-offset: 3px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+label { font-size: 14px; font-weight: 700; color: var(--cream); }
+input[type="text"], textarea { width: 100%; font: inherit; font-size: 17px; padding: 12px 14px; border-radius: 12px; border: 2px solid var(--pine-2); background: #0D2418; color: var(--cream); }
+textarea { min-height: 220px; resize: vertical; }
+input:focus, textarea:focus { outline: none; border-color: var(--mint); }
+.field { display: grid; gap: 6px; }
+
+.lights { width: calc(100% + 32px); margin: -20px -16px 0; height: 52px; display: block; }
+.lights .b { animation: tw 2.4s ease-in-out infinite alternate; }
+@keyframes tw { from { opacity: 1; } to { opacity: 0.45; } }
+
+/* Card */
+.cardwrap { background: var(--cream); border-radius: 20px; padding: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+.cardhead { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 6px; }
+.cardhead span { font-family: var(--display); font-weight: 800; font-size: 22px; text-align: center; color: var(--berry); }
+.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.sq { appearance: none; border: 2px solid #E6DCC8; background: #FFFDF7; color: var(--ink); border-radius: 12px; aspect-ratio: 1 / 1.12; padding: 16px 5px 6px; font: inherit; font-size: 11.5px; line-height: 1.2; font-weight: 600; display: flex; align-items: center; justify-content: center; text-align: center; position: relative; cursor: pointer; overflow: hidden; }
+.sq .t { position: relative; z-index: 1; }
+.sq .stamp { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: 50%; background: var(--gold); opacity: 0; transform: scale(1.8); transition: opacity 160ms, transform 220ms cubic-bezier(.3,1.6,.5,1); display: grid; place-items: center; }
+.sq .stamp svg { width: 70%; height: 70%; }
+.sq.on { background: var(--berry); border-color: var(--berry); transition: background 160ms; }
+.sq.on .stamp { opacity: 1; transform: scale(1); }
+.sq.on .t { color: var(--cream); }
+.sq.line { box-shadow: inset 0 0 0 3px var(--gold); background: #A3342D; }
+.stats { display: flex; justify-content: space-between; gap: 12px; font-variant-numeric: tabular-nums; }
+.stat { display: grid; }
+.stat span { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+.stat strong { font-family: var(--display); font-size: 24px; color: var(--cream); line-height: 1; }
+.banner { background: var(--gold); color: var(--ink); border-radius: 18px; padding: 16px; display: grid; gap: 6px; }
+.banner h2 { color: var(--ink); font-size: 34px; }
+.banner .code { font-family: var(--display); font-weight: 800; letter-spacing: 0.06em; }
+.detail { background: rgba(251,246,236,0.07); border-radius: 14px; padding: 12px 14px; font-size: 15px; color: var(--cream); min-height: 52px; }
+.confirm { background: rgba(200,66,58,0.18); border: 1px solid var(--berry); border-radius: 14px; padding: 12px; display: grid; gap: 10px; }
+.how { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.support { font-size: 13px; border-top: 1px solid var(--pine-2); padding-top: 12px; margin-top: auto; }
+.support b { color: var(--cream); }
+
+canvas#confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .sq .stamp { transition: none; } .lights .b { animation: none; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <svg class="lights" viewBox="0 0 480 52" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
+    <path d="M0 6 Q60 32 120 10 T240 10 T360 10 T480 6" stroke="#0B2016" stroke-width="2" fill="none"/>
+    <circle class="b" cx="30" cy="19" r="6" fill="#C8423A"/><circle class="b" cx="80" cy="23" r="6" fill="#F2C14E" style="animation-delay:.4s"/><circle class="b" cx="130" cy="16" r="6" fill="#9FD8B8" style="animation-delay:.8s"/><circle class="b" cx="180" cy="20" r="6" fill="#FBF6EC" style="animation-delay:1.2s"/><circle class="b" cx="230" cy="19" r="6" fill="#C8423A" style="animation-delay:.2s"/><circle class="b" cx="280" cy="20" r="6" fill="#F2C14E" style="animation-delay:.6s"/><circle class="b" cx="330" cy="17" r="6" fill="#9FD8B8" style="animation-delay:1s"/><circle class="b" cx="380" cy="22" r="6" fill="#FBF6EC" style="animation-delay:1.4s"/><circle class="b" cx="430" cy="18" r="6" fill="#C8423A" style="animation-delay:.3s"/>
+  </svg>
+
+  <section class="screen on" id="intro" aria-labelledby="t-intro">
+    <p class="kicker">26 November to 11 December</p>
+    <h1 id="t-intro">Kindness bingo</h1>
+    <p class="lead">Your card has 16 small acts of kindness, for others and for yourself. Tick them off over the next two weeks. Get a full line by our last lab meeting on 11 December to unlock round 2 of the Christmas card game, with a free pizza to win.</p>
+    <ol class="how">
+      <li>Every phone gets its own shuffled card.</li>
+      <li>Tap a square when you’ve done it. Tap again to undo.</li>
+      <li>A line across, down or diagonally is bingo. On 11 December everyone plays round 1 for a free drink, and a bingo line makes it a drink of your choice instead of a soft drink. Bingo finishers also play round 2 for a free pizza.</li>
+    </ol>
+    <div class="field">
+      <label for="nameInput">Your first name (shown on your card)</label>
+      <input type="text" id="nameInput" maxlength="24" autocomplete="given-name" placeholder="e.g. Sam">
+      <p class="hint">Your card is saved on this phone only. Nobody else can see it.</p>
+    </div>
+    <button class="btn" id="goBtn" type="button">Get my card</button>
+  </section>
+
+  <section class="screen" id="card" aria-labelledby="t-card">
+    <div class="stats">
+      <div><p class="kicker">Kindness bingo</p><h2 id="t-card">Sam’s card</h2></div>
+      <div class="row" style="gap:16px">
+        <div class="stat"><span>Done</span><strong id="doneOut">0/16</strong></div>
+        <div class="stat"><span>Lines</span><strong id="linesOut">0</strong></div>
+      </div>
+    </div>
+    <div class="banner" id="bingo" hidden>
+      <p class="kicker" style="color:#A3342D">Bingo</p>
+      <h2>You’ve got a line!</h2>
+      <p>You’ve unlocked round 2 at our last lab meeting on 11 December, with a free pizza to win. Win round 1 and your free drink is a drink of your choice. Show this screen on the day.</p>
+      <p>Card <span class="code" id="cardCode">KIND-0000</span> · bingo on <span id="bingoWhen"></span></p>
+    </div>
+    <div class="cardwrap">
+      <div class="cardhead" aria-hidden="true"><span>K</span><span>I</span><span>N</span><span>D</span></div>
+      <div class="grid" id="grid" role="group" aria-label="Bingo card"></div>
+    </div>
+    <p class="detail" id="detail" aria-live="polite">Tap a square to tick it off.</p>
+    <p class="hint">Saved on this phone. Take a screenshot now and then in case your browser clears it.</p>
+    <div class="row">
+      <button class="btn ghost" id="newBtn" type="button">New card</button>
+    </div>
+    <div class="confirm" id="confirmBox" hidden>
+      <p>Start a new card? Your ticks on this one will be lost.</p>
+      <div class="row"><button class="btn" id="yesNew" type="button">Yes, new card</button><button class="btn ghost" id="noNew" type="button">Keep this card</button></div>
+    </div>
+  </section>
+
+  <p class="support">Need to talk? Students: <b>1300 851 998</b>. Staff EAP: <b>1300 307 912</b>. Lifeline: <b>13 11 14</b>. All 24 hours.</p>
+</div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<script>
+// ---------- Edit here: the pool of kind acts. Each card draws 16 at random. ----------
+const ACTS = [
+  { s: "Ask a labmate how they really are", d: "Not “how’s the project?” Ask about them, then listen." },
+  { s: "Lunch away from your desk", d: "Eat somewhere that isn’t your workstation. Outside counts double." },
+  { s: "Thank someone who helped this year", d: "A supervisor, a technician, a farm or animal house staffer, a fellow student." },
+  { s: "Walk outside between tasks", d: "Ten minutes in the sun (with a hat) between experiments or meetings." },
+  { s: "Share a snack with the group", d: "Bring something to share. Bonus points for a family recipe." },
+  { s: "Chat with someone you rarely talk to", d: "Someone from another project, floor or career stage." },
+  { s: "Compliment someone’s work out loud", d: "In a meeting, in the corridor, or in a message." },
+  { s: "Leave on time one day", d: "Close the laptop at a sensible hour. The data will wait." },
+  { s: "Make a cuppa for someone else", d: "Ask how they take it. Then make it." },
+  { s: "Celebrate a small win", d: "Yours or someone else’s: a clean run, a sent draft, a good result." },
+  { s: "Offer to help with a task", d: "A sampling day, a proofread, a hand with the cleanup." },
+  { s: "A screen-free meal", d: "Phone face down or in your bag for the whole meal." },
+  { s: "Message an old collaborator", d: "Someone you haven’t heard from in a while. Just to say hello." },
+  { s: "Ask a newer member about their work", d: "What are they working on, and what’s been hard so far?" },
+  { s: "Swap a Christmas food tradition", d: "Tell a labmate what your family eats at Christmas, and ask about theirs." },
+  { s: "Tidy a shared space", d: "The kitchen, a bench, the sample fridge. Unasked." },
+  { s: "Do something nice for yourself", d: "A swim, a book, a long shower, a favourite meal. Your pick." },
+  { s: "Go to bed on time one night", d: "Sleep is part of the method." },
+  { s: "Check in with a quiet colleague", d: "Someone who’s seemed flat or busy lately. A simple “how are you going?”" },
+  { s: "Invite someone for a coffee", d: "Or say yes when someone asks you." },
+  { s: "Share a setback, not just a success", d: "At lab meeting or with a colleague. It helps others share theirs." },
+  { s: "Write down one thing you’re proud of", d: "From this year, however small. Keep it somewhere you’ll see it." },
+  { s: "Learn someone’s weekend plans", d: "Then ask how it went on Monday." },
+  { s: "Turn off work notifications for an evening", d: "Email and chat. One whole evening." }
+];
+const LINES = [];
+for (let r = 0; r < 4; r++) LINES.push([0,1,2,3].map(c => r * 4 + c));
+for (let c = 0; c < 4; c++) LINES.push([0,1,2,3].map(r => r * 4 + c));
+LINES.push([0,5,10,15], [3,6,9,12]);
+
+const STORE = "kindness-bingo-v1";
+const $ = id => document.getElementById(id);
+let st = { name: "", picks: [], ticks: [], code: "", bingoAt: 0 };
+let current = "intro";
+
+function save() { try { localStorage.setItem(STORE, JSON.stringify(st)); } catch (e) {} }
+function load() { try { const d = JSON.parse(localStorage.getItem(STORE) || "null"); return d && Array.isArray(d.picks) && d.picks.length === 16 ? d : null; } catch (e) { return null; } }
+function shuffle(a) { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
+function code() { const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s = ""; for (let i = 0; i < 4; i++) s += c[Math.floor(Math.random() * c.length)]; return "KIND-" + s; }
+function newCard() { st.picks = shuffle(ACTS.map((_, i) => i)).slice(0, 16); st.ticks = Array(16).fill(false); st.code = code(); st.bingoAt = 0; save(); }
+const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="#1F2A22" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
+
+function done() { return LINES.filter(l => l.every(i => st.ticks[i])); }
+function render() {
+  $("t-card").textContent = (st.name ? st.name + "’s" : "Your") + " card";
+  const g = $("grid"); g.innerHTML = "";
+  const lineCells = new Set(done().flat());
+  st.picks.forEach((ai, i) => {
+    const a = ACTS[ai], b = document.createElement("button");
+    b.type = "button"; b.className = "sq" + (st.ticks[i] ? " on" : "") + (lineCells.has(i) ? " line" : "");
+    b.setAttribute("aria-pressed", st.ticks[i] ? "true" : "false");
+    b.innerHTML = '<span class="stamp" aria-hidden="true">' + CHECK + '</span><span class="t"></span>';
+    b.querySelector(".t").textContent = a.s;
+    b.addEventListener("click", () => toggle(i));
+    g.appendChild(b);
+  });
+  const n = st.ticks.filter(Boolean).length, lines = done().length;
+  $("doneOut").textContent = n + "/16"; $("linesOut").textContent = lines;
+  $("bingo").hidden = lines === 0;
+  $("cardCode").textContent = st.code;
+  $("bingoWhen").textContent = st.bingoAt ? new Date(st.bingoAt).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" }) : "";
+}
+function toggle(i) {
+  const before = done().length;
+  st.ticks[i] = !st.ticks[i];
+  const after = done().length;
+  if (after > 0 && !st.bingoAt) st.bingoAt = Date.now();
+  if (after === 0) st.bingoAt = 0;
+  save(); render();
+  const a = ACTS[st.picks[i]];
+  $("detail").innerHTML = "";
+  const s = document.createElement("strong"); s.textContent = (st.ticks[i] ? "Done: " : "Undone: ") + a.s + ". ";
+  $("detail").append(s, a.d);
+  if (after > before) { burst(); }
+}
+
+function show(id) { current = id; document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id === id)); window.scrollTo(0, 0); }
+
+// ---------- Confetti ----------
+function burst() {
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const cv = $("confetti"), ctx = cv.getContext("2d"), dpr = window.devicePixelRatio || 1;
+  cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const cols = ["#C8423A", "#F2C14E", "#9FD8B8", "#FBF6EC"];
+  const bits = Array.from({ length: 130 }, () => ({ x: innerWidth / 2, y: innerHeight * 0.4, vx: (Math.random() - 0.5) * 14, vy: -Math.random() * 13 - 4, r: Math.random() * 7 + 3, c: cols[Math.floor(Math.random() * 4)], a: Math.random() * 6 }));
+  let k = 0;
+  (function step() { ctx.clearRect(0, 0, innerWidth, innerHeight); bits.forEach(b => { b.vy += 0.35; b.x += b.vx; b.y += b.vy; b.a += 0.2; ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.a); ctx.fillStyle = b.c; ctx.fillRect(-b.r / 2, -b.r / 4, b.r, b.r / 2); ctx.restore(); }); if (++k < 120) requestAnimationFrame(step); else ctx.clearRect(0, 0, innerWidth, innerHeight); })();
+}
+
+// ---------- Start ----------
+(function start() {
+  const saved = load();
+  if (saved) { st = saved; $("nameInput").value = st.name || ""; render(); show("card"); }
+  $("goBtn").addEventListener("click", () => { st.name = $("nameInput").value.trim().slice(0, 24); newCard(); render(); show("card"); });
+  $("newBtn").addEventListener("click", () => { $("confirmBox").hidden = false; });
+  $("noNew").addEventListener("click", () => { $("confirmBox").hidden = true; });
+  $("yesNew").addEventListener("click", () => { $("confirmBox").hidden = true; newCard(); render(); $("detail").textContent = "New card ready. Tap a square to tick it off."; });
+})();
+</script>
+</body>
+</html>

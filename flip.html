@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flip for a festive treat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Nunito+Sans:wght@400;600;700&display=swap">
+<style>
+/* Layout idea: one-screen phone game on a pine-green table under a string of fairy lights. Berry-red card backs with a gold star; the prize round is three wrapped presents. Single theme by choice. */
+:root {
+  --pine: #123524;
+  --pine-2: #1C4A33;
+  --cream: #FBF6EC;
+  --ink: #1F2A22;
+  --sun: #F2C14E;
+  --berry: #C8423A;
+  --mint: #9FD8B8;
+  --gold: #F2C14E;
+  --soft: #CFE3D6;
+  --display: 'Bricolage Grotesque', 'Trebuchet MS', sans-serif;
+  --body: 'Nunito Sans', 'Segoe UI', Arial, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+a.btn { text-decoration: none; display: inline-block; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+html, body { height: 100%; margin: 0; }
+body {
+  background:
+    radial-gradient(circle at 20% 8%, rgba(242,193,78,0.14), transparent 40%),
+    radial-gradient(circle at 85% 92%, rgba(200,66,58,0.18), transparent 45%),
+    var(--pine);
+  color: var(--soft);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.45;
+  -webkit-tap-highlight-color: transparent;
+}
+.app { max-width: 480px; margin: 0 auto; min-height: 100%; padding: 20px 16px 28px; display: flex; flex-direction: column; gap: 16px; }
+h1, h2 { font-family: var(--display); color: var(--cream); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h1 { font-size: 40px; line-height: 1.02; font-weight: 800; }
+h2 { font-size: 28px; line-height: 1.1; font-weight: 800; }
+p { margin: 0; }
+.kicker { font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sun); }
+.lead { font-size: 17px; color: var(--soft); max-width: 36ch; }
+.screen { display: none; flex-direction: column; gap: 16px; }
+.screen.on { display: flex; }
+
+/* Start */
+.hero-cards { display: flex; gap: 10px; margin: 8px 0 4px; }
+.hero-cards .mini { width: 64px; aspect-ratio: 3 / 4; border-radius: 12px; background: var(--berry); border: 2px solid var(--sun); display: grid; place-items: center; transform: rotate(var(--r)); box-shadow: 0 6px 16px rgba(0,0,0,0.25); }
+.hero-cards .mini svg { width: 32px; height: 32px; }
+.hero-cards .mini.face { background: var(--cream); border-color: var(--cream); }
+.how { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.how li { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; font-size: 15px; }
+.how b { font-family: var(--display); color: var(--pine); background: var(--sun); border-radius: 50%; width: 28px; height: 28px; display: grid; place-items: center; font-size: 15px; }
+label { font-size: 14px; font-weight: 700; color: var(--cream); }
+input[type="text"] { width: 100%; font: inherit; font-size: 17px; padding: 12px 14px; border-radius: 12px; border: 2px solid var(--pine-2); background: #0D2423; color: var(--cream); }
+input[type="text"]:focus { outline: none; border-color: var(--mint); }
+.field { display: grid; gap: 6px; }
+.hint { font-size: 13px; color: var(--soft); opacity: 0.85; }
+.btn { appearance: none; border: 0; font-family: var(--display); font-weight: 800; font-size: 18px; padding: 14px 20px; border-radius: 999px; background: var(--sun); color: var(--ink); cursor: pointer; box-shadow: 0 4px 0 #B8862A; }
+.btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #B8862A; }
+.btn.ghost { background: transparent; color: var(--cream); border: 2px solid var(--soft); box-shadow: none; font-size: 16px; padding: 12px 18px; }
+.btn:focus-visible, .card:focus-visible, .prize:focus-visible { outline: 3px solid var(--mint); outline-offset: 3px; }
+
+/* Board */
+.hud { display: flex; justify-content: space-between; align-items: end; gap: 12px; }
+.stats { display: flex; gap: 16px; font-variant-numeric: tabular-nums; }
+.stat { display: grid; text-align: right; }
+.stat span { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--soft); }
+.stat strong { font-family: var(--display); font-size: 24px; color: var(--cream); line-height: 1; }
+.board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; perspective: 900px; }
+.card { appearance: none; border: 0; padding: 0; background: none; aspect-ratio: 3 / 4; cursor: pointer; position: relative; border-radius: 14px; }
+.inner { position: absolute; inset: 0; transition: transform 420ms cubic-bezier(.2,.8,.2,1); transform-style: preserve-3d; }
+.card.up .inner, .card.done .inner { transform: rotateY(180deg); }
+.side { position: absolute; inset: 0; border-radius: 14px; backface-visibility: hidden; -webkit-backface-visibility: hidden; display: grid; place-items: center; }
+.back {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(242,193,78,0.35) 0 22%, transparent 23%),
+    repeating-linear-gradient(135deg, rgba(251,246,236,0.10) 0 6px, transparent 6px 16px),
+    var(--berry);
+  border: 2px solid rgba(242,193,78,0.8);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.28);
+}
+.front { background: var(--cream); color: var(--ink); transform: rotateY(180deg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 6px 14px rgba(0,0,0,0.28); }
+.front svg { width: 44%; height: auto; }
+.front .name { font-family: var(--display); font-weight: 700; font-size: 15px; }
+.card.done .front { box-shadow: 0 0 0 3px var(--mint), 0 6px 14px rgba(0,0,0,0.28); }
+.card.miss .inner { animation: shake 380ms; }
+@keyframes shake { 0%,100% { transform: rotateY(180deg) translateX(0); } 25% { transform: rotateY(180deg) translateX(-5px); } 75% { transform: rotateY(180deg) translateX(5px); } }
+
+.tip { background: var(--cream); color: var(--ink); border-radius: 16px; padding: 14px 16px; display: grid; grid-template-columns: 40px 1fr; gap: 12px; align-items: center; min-height: 76px; }
+.tip svg { width: 40px; height: 40px; }
+.tip strong { font-family: var(--display); }
+.tip.idle { background: rgba(251,246,236,0.08); color: var(--soft); grid-template-columns: 1fr; }
+
+/* Prize */
+.prizes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; perspective: 900px; }
+.prize { appearance: none; border: 0; padding: 0; background: none; aspect-ratio: 3 / 4.4; cursor: pointer; position: relative; border-radius: 16px; }
+.prize .back { background: linear-gradient(90deg, transparent 43%, var(--berry) 43% 57%, transparent 57%), linear-gradient(0deg, transparent 43%, var(--berry) 43% 57%, transparent 57%), repeating-linear-gradient(45deg, #E6B23F 0 10px, var(--gold) 10px 20px); border: 2px solid #FFE3A0; }
+.prize .back span { font-family: var(--display); font-weight: 800; font-size: 30px; color: var(--cream); background: var(--berry); width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 0 0 3px #FFE3A0; }
+.lights { width: calc(100% + 32px); margin: -20px -16px 0; height: 56px; display: block; }
+.lights .bulb { animation: twinkle 2.4s ease-in-out infinite alternate; }
+@keyframes twinkle { from { opacity: 1; } to { opacity: 0.45; } }
+.prize.up .inner { transform: rotateY(180deg); }
+.prize .front { padding: 8px; text-align: center; }
+.prize .front .name { font-size: 14px; line-height: 1.15; }
+.prize.dim { opacity: 0.35; pointer-events: none; }
+
+.voucher { background: var(--cream); color: var(--ink); border-radius: 20px; padding: 20px; display: grid; gap: 10px; position: relative; border: 3px dashed var(--berry); }
+.voucher .kicker { color: #A3342D; }
+.voucher h2 { color: var(--ink); font-size: 30px; }
+.voucher .row { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; border-top: 1px solid #E5DCCB; padding-top: 10px; font-variant-numeric: tabular-nums; }
+.voucher .code { font-family: var(--display); font-weight: 800; font-size: 22px; letter-spacing: 0.06em; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.totalbox { background: var(--cream); color: var(--ink); border-radius: 20px; padding: 14px 18px; display: grid; gap: 2px; }
+.total { font-family: var(--display); font-weight: 800; font-size: 72px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink); }
+.prizes.nr { grid-template-columns: 1fr 1fr; max-width: 360px; }
+.prize .front .op { font-family: var(--display); font-weight: 800; font-size: 40px; line-height: 1; }
+.prize.other .front { opacity: 0.55; }
+.nrlog { margin: 0; padding-left: 22px; display: grid; gap: 4px; font-size: 15px; color: var(--cream); font-variant-numeric: tabular-nums; }
+.check { display: flex; gap: 10px; align-items: center; font-weight: 600; font-size: 16px; }
+.check input { width: 22px; height: 22px; accent-color: #F2C14E; }
+.r2 { border-top: 1px solid var(--pine-2); padding-top: 20px; display: grid; gap: 14px; }
+.r2how li { font-size: 17px; }
+.tbconfirm { background: rgba(242,193,78,0.12); border: 1px solid rgba(242,193,78,0.6); border-radius: 14px; padding: 12px 14px; display: grid; gap: 10px; color: var(--cream); font-size: 15px; }
+.support { font-size: 13px; color: var(--soft); border-top: 1px solid var(--pine-2); padding-top: 12px; margin-top: auto; }
+.support b { color: var(--cream); font-weight: 700; }
+canvas#confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+/* Flip-off host view (#board, for the projector) */
+.countdown { background: rgba(251,246,236,0.06); border: 1px solid var(--pine-2); border-radius: 24px; padding: 24px; display: grid; gap: 12px; justify-items: start; }
+.bignum { font-family: var(--display); font-weight: 800; font-size: clamp(96px, 16vw, 200px); line-height: 0.9; color: var(--gold); font-variant-numeric: tabular-nums; }
+body.wide .app { max-width: 1100px; padding: 20px 32px 32px; }
+.lb-head { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; }
+.lb-head h1 { font-size: clamp(36px, 5vw, 64px); }
+.tally { display: flex; gap: 10px; flex-wrap: wrap; }
+.chip { display: inline-flex; align-items: center; gap: 8px; background: rgba(251,246,236,0.08); border: 1px solid var(--pine-2); border-radius: 999px; padding: 6px 12px 6px 8px; font-size: 14px; color: var(--cream); font-variant-numeric: tabular-nums; }
+.chip svg { width: 22px; height: 22px; }
+.podium { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.pod { background: var(--cream); color: var(--ink); border-radius: 18px; padding: 16px; display: grid; gap: 4px; border-top: 6px solid var(--mint); }
+.pod.first { border-top-color: var(--gold); background: #FFF4D6; }
+.pod .place { font-family: var(--display); font-weight: 800; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; color: #A3342D; }
+.pod .who { font-family: var(--display); font-weight: 800; font-size: 24px; line-height: 1.1; overflow-wrap: anywhere; }
+.pod .num { font-size: 14px; font-variant-numeric: tabular-nums; }
+.pod.empty { opacity: 0.45; }
+.lb { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.lb th { text-align: left; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--soft); padding: 8px 10px; border-bottom: 1px solid var(--pine-2); font-weight: 700; }
+.lb td { padding: 10px; border-bottom: 1px solid var(--pine-2); color: var(--cream); font-size: 16px; vertical-align: middle; }
+.lb td.r { font-family: var(--display); font-weight: 800; width: 48px; color: var(--sun); }
+.lb .pz { display: inline-flex; gap: 8px; align-items: center; }
+.lb .pz svg { width: 26px; height: 26px; background: var(--cream); border-radius: 8px; padding: 2px; }
+.lb tr.me td { background: rgba(242,193,78,0.10); }
+.tablewrap { overflow-x: auto; }
+.status { font-size: 14px; color: var(--soft); }
+.status.warn { color: #FFD48A; }
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.btn.small { font-size: 15px; padding: 10px 16px; }
+.btn.danger { background: transparent; color: #FFB4AE; border: 2px solid #8C3A35; box-shadow: none; }
+.reveal { position: fixed; inset: 0; background: rgba(9,26,18,0.92); display: none; place-items: center; padding: 24px; z-index: 5; }
+.reveal.on { display: grid; }
+.reveal .inner2 { text-align: center; display: grid; gap: 14px; justify-items: center; max-width: 720px; }
+.reveal .egg { width: 120px; height: 120px; }
+.reveal h1 { font-size: clamp(44px, 8vw, 96px); }
+.reveal p { font-size: 20px; color: var(--soft); }
+.linkish { color: var(--mint); font-weight: 700; text-decoration: underline; background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+.playing-as { font-size: 15px; color: var(--cream); }
+@media (max-width: 640px) { .podium { grid-template-columns: 1fr; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .inner { transition: none; }
+  .card.miss .inner { animation: none; }
+  .lights .bulb { animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <svg class="lights" viewBox="0 0 480 56" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
+    <path d="M0 6 Q60 34 120 10 T240 10 T360 10 T480 6" stroke="#0B2016" stroke-width="2" fill="none"/>
+    <g>
+      <circle class="bulb" cx="30" cy="20" r="6" fill="#C8423A"/>
+      <circle class="bulb" cx="75" cy="24" r="6" fill="#F2C14E" style="animation-delay:.4s"/>
+      <circle class="bulb" cx="120" cy="17" r="6" fill="#9FD8B8" style="animation-delay:.8s"/>
+      <circle class="bulb" cx="165" cy="22" r="6" fill="#FBF6EC" style="animation-delay:1.2s"/>
+      <circle class="bulb" cx="210" cy="20" r="6" fill="#C8423A" style="animation-delay:.2s"/>
+      <circle class="bulb" cx="255" cy="20" r="6" fill="#F2C14E" style="animation-delay:.6s"/>
+      <circle class="bulb" cx="300" cy="22" r="6" fill="#9FD8B8" style="animation-delay:1s"/>
+      <circle class="bulb" cx="345" cy="17" r="6" fill="#FBF6EC" style="animation-delay:1.4s"/>
+      <circle class="bulb" cx="390" cy="24" r="6" fill="#C8423A" style="animation-delay:.3s"/>
+      <circle class="bulb" cx="440" cy="18" r="6" fill="#F2C14E" style="animation-delay:.7s"/>
+    </g>
+  </svg>
+
+  <section class="screen on" id="start" aria-labelledby="t-start">
+    <p class="kicker">Last lab meeting · 11 December</p>
+    <h1 id="t-start">Flip for a festive treat</h1>
+    <div class="hero-cards" aria-hidden="true">
+      <div class="mini" style="--r:-6deg"></div>
+      <div class="mini face" style="--r:3deg" id="heroFace1"></div>
+      <div class="mini" style="--r:-2deg"></div>
+      <div class="mini face" style="--r:5deg" id="heroFace2"></div>
+    </div>
+    <p class="lead">Two rounds, two prizes. Round 1 is for everyone: set the Christmas table by matching six pairs in as few flips as you can. Round 2 is the number round, unlocked by a line on your kindness bingo card.</p>
+    <ol class="how">
+      <li><b>1</b><span>Round 1, everyone: fewest flips wins a free drink. With a bingo line it’s a drink of your choice; without one, a soft drink.</span></li>
+      <li><b>2</b><span>Round 2, bingo finishers only: build the highest total with + − × ÷ cards to win a free pizza.</span></li>
+      <li><b>3</b><span>Keep your score card open on your phone for the countdowns on the big screen.</span></li>
+    </ol>
+        <div class="field" id="nameField">
+      <label for="nameInput">Your first name (for your score card)</label>
+      <input type="text" id="nameInput" maxlength="24" autocomplete="given-name" placeholder="e.g. Sam">
+      <p class="hint">Stays on your phone only.</p>
+    </div>
+    <button class="btn" id="startBtn" type="button">Start flipping</button>
+    <p class="hint">Everyone gets a cookie or a chocolate too, so nobody leaves empty-handed.</p>
+  </section>
+
+  <section class="screen" id="play" aria-labelledby="t-play">
+    <div class="hud">
+      <div>
+        <p class="kicker" id="playKicker">Round 1</p>
+        <h2 id="t-play">Set the table</h2>
+      </div>
+      <div class="stats" aria-live="polite">
+        <div class="stat"><span>Pairs</span><strong id="pairsOut">0/6</strong></div>
+        <div class="stat"><span>Flips</span><strong id="movesOut">0</strong></div>
+        <div class="stat"><span>Time</span><strong id="timeOut">0:00</strong></div>
+      </div>
+    </div>
+    <div class="board" id="board"></div>
+    <div class="tip idle" id="tip" aria-live="polite"><p>Match a pair to reveal a holiday tip.</p></div>
+  </section>
+
+  <section class="screen" id="prize" aria-labelledby="t-prize">
+    <p class="kicker">Round 2</p>
+    <h2 id="t-prize">Table set. Unwrap a present.</h2>
+    <p class="lead" id="prizeLead">Each present hides your festive title.</p>
+    <div class="prizes" id="prizes"></div>
+  </section>
+
+  <section class="screen" id="nums" aria-labelledby="t-nums">
+    <div class="hud">
+      <div>
+        <p class="kicker">Round 2 · number round</p>
+        <h2 id="t-nums">Highest total wins a pizza</h2>
+      </div>
+      <div class="stats"><div class="stat"><span>Turn</span><strong id="nrTurn">1/5</strong></div></div>
+    </div>
+    <div class="totalbox"><p class="kicker" style="color:#A3342D">Your total</p><p class="total" id="nrTotal" aria-live="polite">10</p></div>
+    <p class="lead" id="nrLead">Pick a card. Each one changes your total.</p>
+    <div class="prizes nr" id="nrCards"></div>
+    <ol class="nrlog" id="nrLog"></ol>
+  </section>
+
+  <section class="screen" id="won" aria-labelledby="t-won">
+    <div class="voucher" id="voucher">
+      <p class="kicker">Score card · 11 December</p>
+      <h2 id="t-won">Prize</h2>
+      <p id="wonBlurb"></p>
+      <div class="row"><span>Name</span><strong id="vName">Guest</strong></div>
+      <div class="row"><span>Card code</span><span class="code" id="vCode">XMAS-0000</span></div>
+      <div class="row"><span>Round 1 · flips and time</span><strong id="vMoves">0</strong></div>
+      <div class="row" id="tbRow" hidden><span>Round 2 · number total</span><strong id="vTb">0</strong></div>
+    </div>
+    <p class="lead">Keep this screen open for the countdown on the big screen. Fewest flips in round 1 wins a free drink. Got a bingo line? Play round 2 when the host says go.</p>
+    <div class="actions">
+      <button class="btn small" id="tbBtn" type="button">Play round 2 (bingo finishers)</button>
+      <button class="btn ghost" id="againBtn" type="button">Play again, just for fun</button>
+    </div>
+    <div class="tbconfirm" id="tbConfirm" hidden>
+      <p><strong>Round 2 is for kindness bingo finishers.</strong> Show your bingo line to the host, then start when they say go. You start at 10 and pick one of two face-down cards five times. Each card adds, subtracts, multiplies or divides your total. Highest total wins a free pizza. You get one go, and it’s saved as you play.</p>
+      <div class="actions"><button class="btn small" id="tbYes" type="button">Start round 2</button><button class="btn ghost" id="tbNo" type="button">Not yet</button></div>
+    </div>
+    <p class="hint" id="lockNote">Your round 1 score is locked in. Playing again for fun won’t change it.</p>
+  </section>
+
+  <section class="screen" id="lb" aria-labelledby="t-lb">
+    <div class="lb-head">
+      <div>
+        <p class="kicker">Round 1 · everyone · on the big screen</p>
+        <h1 id="t-lb">Who tops the pecking order?</h1>
+      </div>
+      <div class="toolbar">
+        <a class="btn ghost small" href="#">Back to the game</a>
+      </div>
+    </div>
+    <div class="podium">
+      <div class="pod first"><p class="place">Step 1</p><p class="who">Everyone stand up</p><p class="num">Keep your result screen handy.</p></div>
+      <div class="pod"><p class="place">Step 2</p><p class="who">Sit when you’re out</p><p class="num">Sit down when the number drops below your flips.</p></div>
+      <div class="pod"><p class="place">Step 3</p><p class="who">Last one standing</p><p class="num">Wins a free drink: their choice with a bingo line, a soft drink without.</p></div>
+    </div>
+    <div class="countdown">
+      <p class="status">Still standing if you finished in this many flips or fewer</p>
+      <p class="bignum" id="bigNum" aria-live="polite">20</p>
+      <div class="toolbar">
+        <button class="btn" id="downBtn" type="button">Next number</button>
+        <button class="btn ghost small" id="upBtn" type="button">Back one</button>
+        <button class="btn ghost small" id="resetBtn" type="button">Start again at 20</button>
+      </div>
+      <p class="status">Two or more left at the same number? Fastest time on their score card wins. Still exactly tied? Rock, paper, scissors.</p>
+    </div>
+    <div class="field" style="max-width:520px">
+      <label for="winnerInput">Round 1 winner’s name</label>
+      <input type="text" id="winnerInput" maxlength="32" placeholder="Type the winner’s name">
+      <label class="check"><input type="checkbox" id="hasBingo"> The winner has a bingo line (drink of their choice)</label>
+    </div>
+    <div class="toolbar"><button class="btn" id="revealBtn" type="button">Crown the round 1 winner</button></div>
+
+    <div class="r2">
+      <p class="kicker">Round 2 · bingo finishers only</p>
+      <h2>The number round: highest total wins a pizza</h2>
+      <ol class="how r2how">
+        <li><b>1</b><span>Bingo finishers show their bingo line, then tap “Play round 2” on their score card.</span></li>
+        <li><b>2</b><span>Everyone plays together: start at 10, five turns, pick one of two face-down cards each turn.</span></li>
+        <li><b>3</b><span>Read out final totals. Highest wins. Exactly tied? Rock, paper, scissors.</span></li>
+      </ol>
+      <div class="field" style="max-width:520px">
+        <label for="winner2Input">Round 2 winner’s name</label>
+        <input type="text" id="winner2Input" maxlength="32" placeholder="Type the winner’s name">
+      </div>
+      <div class="toolbar"><button class="btn" id="reveal2Btn" type="button">Crown the pizza winner</button></div>
+    </div>
+  </section>
+
+  <p class="support">Need to talk? Students: <b>1300 851 998</b>. Staff EAP: <b>1300 307 912</b>. Lifeline: <b>13 11 14</b>. All 24 hours.</p>
+</div>
+
+<div class="reveal" id="reveal" role="dialog" aria-modal="true" aria-labelledby="revealName">
+  <div class="inner2">
+    <div class="egg" id="revealIcon"></div>
+    <p class="kicker" id="revealKicker">Top of the pecking order</p>
+    <h1 id="revealName">…</h1>
+    <p id="revealStats">Wins a free drink of their choice. Cheers!</p>
+    <button class="btn" id="revealClose" type="button">Back to the flip-off</button>
+  </div>
+</div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<script>
+// ---------- Edit here: festive titles revealed in the presents (no cost). The free drink goes to the flip-off winner. ----------
+const PRIZES = [
+  { name: "Gingerbread genius", blurb: "Sharp, sweet and just a little spicy.", weight: 1, icon: "cookie" },
+  { name: "Pavlova pro", blurb: "Crisp under pressure, soft in the middle.", weight: 1, icon: "pav" },
+  { name: "Chief chook wrangler", blurb: "Rounds up pairs like nobody else.", weight: 1, icon: "chook" },
+  { name: "Honorary sensory panellist", blurb: "Your palate and your memory are both in fine form.", weight: 1, icon: "ham" },
+  { name: "Elf of the year", blurb: "Quick hands and a kind heart.", weight: 1, icon: "star" }
+];
+
+// ---------- The Christmas table: six pairs, each with a holiday tip ----------
+const PAIRS = [
+  { id: "ham", name: "Savour", tip: "Taste the Christmas ham like a sensory panellist: aroma first, then texture, then the finish. Slow eating is mindful eating." },
+  { id: "chook", name: "Share", tip: "Big lunch, lots of people. Put the phone face down and catch up properly with someone." },
+  { id: "mango", name: "Get outside", tip: "Mangoes, the beach, backyard cricket. An Aussie Christmas is made for outdoors. Slip, slop, slap." },
+  { id: "pav", name: "Treat yourself", tip: "Have the pav, then the post-lunch nap. No hedonic ratings required today." },
+  { id: "bell", name: "Switch off", tip: "Silence the work notifications over the break. Your emails, and your birds and pigs, will be fine." },
+  { id: "star", name: "Celebrate", tip: "Name one thing you’re proud of from this year, however small. Then say it out loud." }
+];
+
+const K = 'fill="none" stroke="#1F2A22" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"';
+const ICONS = {
+  ham: '<svg viewBox="0 0 48 48" ' + K + '><path d="M13 15 9 7l9 5M35 15l4-8-9 5" fill="#F4B3AC"/><circle cx="24" cy="26" r="15" fill="#F4B3AC"/><ellipse cx="24" cy="31" rx="7" ry="5" fill="#E88F87"/><circle cx="21.5" cy="31" r="0.8" fill="#1F2A22"/><circle cx="26.5" cy="31" r="0.8" fill="#1F2A22"/><circle cx="18" cy="22" r="0.8" fill="#1F2A22"/><circle cx="30" cy="22" r="0.8" fill="#1F2A22"/><path d="M9 40l30-22" stroke="#C8423A" stroke-width="2"/></svg>',
+  chook: '<svg viewBox="0 0 48 48" ' + K + '><path d="M18 12c0-4 3-6 5-4 1-3 5-3 5 1 3-1 5 2 2 4z" fill="#C8423A"/><path d="M12 30c0-10 6-17 13-17s11 6 11 13c4 0 6 3 6 6 0 6-6 10-15 10-9 0-15-5-15-12z" fill="#FFFDF6"/><path d="M12 22l-6 3 6 2" fill="#F2C14E"/><path d="M13 27c0 3-1 5-3 5" stroke="#C8423A"/><circle cx="18" cy="20" r="0.8" fill="#1F2A22"/><path d="M24 32c4 3 9 3 12-1"/></svg>',
+  mango: '<svg viewBox="0 0 48 48" ' + K + '><path d="M24 12c10-2 18 6 16 16-2 11-14 16-23 12C8 36 6 26 12 18c3-4 7-5 12-6z" fill="#F4A23A"/><path d="M24 12c0-4 2-7 6-8" /><path d="M26 9c4-3 9-2 11 1-4 3-8 2-11-1z" fill="#3E9A62"/></svg>',
+  pav: '<svg viewBox="0 0 48 48" ' + K + '><path d="M8 30c0-6 7-8 16-8s16 2 16 8v4c0 3-7 6-16 6S8 37 8 34z" fill="#FFFDF6"/><path d="M8 30c0 3 7 6 16 6s16-3 16-6"/><circle cx="17" cy="21" r="4" fill="#C8423A"/><circle cx="28" cy="20" r="4.5" fill="#9FD8B8"/><circle cx="34" cy="24" r="3" fill="#C8423A"/><circle cx="23" cy="16" r="3" fill="#F2C14E"/></svg>',
+  bell: '<svg viewBox="0 0 48 48" ' + K + '><path d="M12 34c3-3 3-8 3-13a9 9 0 0 1 18 0c0 5 0 10 3 13z" fill="#F2C14E"/><path d="M20 38a4 4 0 0 0 8 0"/><path d="M6 8l36 32"/></svg>',
+  star: '<svg viewBox="0 0 48 48" ' + K + '><path d="M24 5l5.5 11.5L42 18l-9 8.5L35 39l-11-6-11 6 2-12.5L6 18l12.5-1.5z" fill="#F2C14E"/></svg>',
+  cookie: '<svg viewBox="0 0 48 48" ' + K + '><path d="M24 6a5 5 0 1 1 0 10 5 5 0 0 1 0-10zM16 18h16l-2 6 8 4-2 4-8-3 2 13h-5l-1-8-1 8h-5l2-13-8 3-2-4 8-4z" fill="#C98A4B"/><circle cx="22" cy="10" r="0.8" fill="#1F2A22"/><circle cx="26" cy="10" r="0.8" fill="#1F2A22"/><path d="M22 22h4M22 26h4" stroke="#FBF6EC" stroke-width="2"/></svg>',
+  glass: '<svg viewBox="0 0 48 48" ' + K + '><path d="M12 8h24l-3 26a3 3 0 0 1-3 3H18a3 3 0 0 1-3-3z" fill="#9FD8B8"/><path d="M13 16h22"/><path d="M28 4l-2 12"/></svg>',
+  choc: '<svg viewBox="0 0 48 48" ' + K + '><rect x="10" y="8" width="28" height="32" rx="3" fill="#8A5A2B"/><path d="M10 19h28M10 30h28M24 8v32"/></svg>',
+  note: '<svg viewBox="0 0 48 48" ' + K + '><path d="M18 34V10l20-4v24"/><circle cx="13" cy="34" r="5" fill="#9FD8B8"/><circle cx="33" cy="30" r="5" fill="#9FD8B8"/></svg>',
+  pizza: '<svg viewBox="0 0 48 48" ' + K + '><path d="M8 12c10-6 22-6 32 0L24 42z" fill="#F2C14E"/><path d="M8 12c10-6 22-6 32 0l-2 4c-9-5-19-5-28 0z" fill="#C98A4B"/><circle cx="20" cy="20" r="3" fill="#C8423A"/><circle cx="29" cy="22" r="3" fill="#C8423A"/><circle cx="24" cy="30" r="2.5" fill="#C8423A"/></svg>',
+  egg: '<svg viewBox="0 0 48 48" ' + K + '><path d="M24 5c8 0 14 13 14 22a14 14 0 0 1-28 0C10 18 16 5 24 5z" fill="#F2C14E"/><path d="M17 20l3 3" stroke="#FFF4D6"/><path d="M17 26l2 1" stroke="#FFF4D6"/></svg>'
+};
+
+const STORE = "festive-flip-v3";
+const $ = id => document.getElementById(id);
+let state = { name: "", deck: [], up: [], done: [], moves: 0, startedAt: 0, ms: 0, mine: null, tb: null, nr: null };
+let mode = "main";
+let lock = false, tick = null, current = "start", count = 20;
+
+function fmt(ms) { const s = Math.round((ms || 0) / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
+function fmt1(ms) { const t = Math.round((ms || 0) / 100) / 10, m = Math.floor(t / 60), sec = (t - m * 60).toFixed(1); return m + ":" + (sec < 10 ? "0" : "") + sec; }
+function shuffle(a) { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
+function makeCode() { const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s = ""; for (let i = 0; i < 4; i++) s += c[Math.floor(Math.random() * c.length)]; return "XMAS-" + s; }
+function saveLocal() { try { localStorage.setItem(STORE, JSON.stringify({ name: state.name, mine: state.mine, tb: state.tb, nr: state.nr })); } catch (e) {} }
+function loadLocal() { try { return JSON.parse(localStorage.getItem(STORE) || "null"); } catch (e) { return null; } }
+function validPlay(d) { return d && Number.isInteger(d.prize) && d.prize >= 0 && d.prize < PRIZES.length && typeof d.flips === "number" && typeof d.ms === "number"; }
+function pickPrize() { const total = PRIZES.reduce((t, p) => t + p.weight, 0); let r = Math.random() * total; for (let i = 0; i < PRIZES.length; i++) { r -= PRIZES[i].weight; if (r < 0) return i; } return 0; }
+
+// ---------- Screens and routing ----------
+function show(id) {
+  current = id;
+  document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id === id));
+  document.body.classList.toggle("wide", id === "lb");
+  window.scrollTo(0, 0);
+}
+function route() {
+  if (location.hash === "#board") { show("lb"); return; }
+  if (current === "lb") show(state.mine ? "won" : "start");
+}
+
+// ---------- Round 1: the table ----------
+function newGame() {
+  state.deck = shuffle(PAIRS.flatMap(p => [p.id, p.id]));
+  state.up = []; state.done = []; state.moves = 0; state.startedAt = 0; state.ms = 0;
+  clearInterval(tick); tick = null;
+  $("tip").className = "tip idle"; $("tip").innerHTML = "<p>Match a pair to reveal a holiday tip.</p>";
+  renderTable();
+}
+function renderTable() {
+  const board = $("board"); board.innerHTML = "";
+  state.deck.forEach((pid, i) => {
+    const p = PAIRS.find(x => x.id === pid);
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "card"; b.id = "card-" + i;
+    b.setAttribute("aria-label", "Face-down card " + (i + 1));
+    b.innerHTML = '<div class="inner"><div class="side back"></div><div class="side front">' + ICONS[pid] + '<span class="name">' + p.name + '</span></div></div>';
+    b.addEventListener("click", () => flip(i));
+    board.appendChild(b);
+  });
+  hud();
+}
+function hud() { $("pairsOut").textContent = (state.done.length / 2) + "/6"; $("movesOut").textContent = state.moves; $("timeOut").textContent = fmt(state.ms); }
+function flip(i) {
+  if (lock || state.done.includes(i) || state.up.includes(i)) return;
+  if (!state.startedAt) { state.startedAt = Date.now(); tick = setInterval(() => { state.ms = Date.now() - state.startedAt; hud(); }, 500); }
+  const el = $("card-" + i), p = PAIRS.find(x => x.id === state.deck[i]);
+  el.classList.add("up"); el.setAttribute("aria-label", p.name);
+  state.up.push(i);
+  if (state.up.length < 2) return;
+  state.moves++; hud();
+  const [a, b] = state.up;
+  if (state.deck[a] === state.deck[b]) {
+    state.done.push(a, b); state.up = [];
+    [a, b].forEach(k => { const c = $("card-" + k); c.classList.remove("up"); c.classList.add("done"); c.setAttribute("aria-label", p.name + ", matched"); });
+    $("tip").className = "tip"; $("tip").innerHTML = ICONS[p.id] + "<p><strong>" + p.name + ".</strong> " + p.tip + "</p>";
+    hud();
+    if (state.done.length === state.deck.length) { clearInterval(tick); tick = null; state.ms = Date.now() - state.startedAt; hud(); setTimeout(toPresents, 900); }
+  } else {
+    lock = true;
+    [a, b].forEach(k => $("card-" + k).classList.add("miss"));
+    setTimeout(() => { [a, b].forEach(k => { const c = $("card-" + k); c.classList.remove("up", "miss"); c.setAttribute("aria-label", "Face-down card " + (k + 1)); }); state.up = []; lock = false; }, 850);
+  }
+}
+function rating(m) { if (m <= 8) return "A memory like a pig’s nose. Did you peek?"; if (m <= 11) return "Sharp as a candy cane."; if (m <= 15) return "Nicely done, elf."; return "Got there. Persistence is very festive."; }
+
+function startRound(m) {
+  mode = m;
+  $("playKicker").textContent = m === "fun" ? "Just for fun" : "Round 1";
+  newGame(); show("play");
+}
+
+// ---------- Round 2: the number round (bingo finishers) ----------
+const NR_START = 10, NR_TURNS = 5;
+const NR_POOL = [["+", 3], ["+", 5], ["+", 8], ["+", 10], ["−", 2], ["−", 4], ["−", 6], ["×", 2], ["×", 3], ["÷", 2]];
+function fmtN(x) { return (Math.round(x * 10) / 10).toLocaleString("en-AU", { maximumFractionDigits: 1 }); }
+function applyOp(t, c) { const [o, n] = c; const r = o === "+" ? t + n : o === "−" ? t - n : o === "×" ? t * n : t / n; return Math.round(r * 10) / 10; }
+function dealPair() { const a = NR_POOL[Math.floor(Math.random() * NR_POOL.length)]; let b; do { b = NR_POOL[Math.floor(Math.random() * NR_POOL.length)]; } while (b[0] === a[0] && b[1] === a[1]); return [a, b]; }
+function startNumbers() {
+  if (!state.nr) { state.nr = { total: NR_START, log: [], cards: dealPair() }; saveLocal(); }
+  renderNumbers(); show("nums");
+}
+function renderNumbers() {
+  const nr = state.nr, turn = nr.log.length;
+  $("nrTurn").textContent = Math.min(turn + 1, NR_TURNS) + "/" + NR_TURNS;
+  $("nrTotal").textContent = fmtN(nr.total);
+  const log = $("nrLog"); log.innerHTML = "";
+  nr.log.forEach(l => { const li = document.createElement("li"); li.textContent = fmtN(l.from) + " " + l.op + " " + l.n + " = " + fmtN(l.to) + "   (the other card was " + l.alt + ")"; log.appendChild(li); });
+  const box = $("nrCards"); box.innerHTML = "";
+  nr.cards.forEach((c, k) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "prize"; b.id = "nr-" + k;
+    b.setAttribute("aria-label", "Card " + (k + 1) + ", face down");
+    b.innerHTML = '<div class="inner"><div class="side back"><span>?</span></div><div class="side front"><span class="op"></span></div></div>';
+    b.querySelector(".op").textContent = c[0] + " " + c[1];
+    b.addEventListener("click", () => pickNumber(k));
+    box.appendChild(b);
+  });
+  $("nrLead").textContent = turn === 0 ? "Pick a card. Each one changes your total." : "Pick your next card.";
+}
+function pickNumber(k) {
+  if (lock || !state.nr || state.tb) return; lock = true;
+  const nr = state.nr, c = nr.cards[k], alt = nr.cards[1 - k];
+  const to = applyOp(nr.total, c);
+  nr.log.push({ from: nr.total, op: c[0], n: c[1], to: to, alt: alt[0] + " " + alt[1] });
+  nr.total = to;
+  const last = nr.log.length >= NR_TURNS;
+  if (!last) nr.cards = dealPair();
+  if (last) { state.tb = { total: to, at: Date.now() }; }
+  saveLocal();
+  const el = $("nr-" + k), other = $("nr-" + (1 - k));
+  el.classList.add("up"); other.classList.add("up", "other");
+  $("nrTotal").textContent = fmtN(to);
+  setTimeout(() => {
+    lock = false;
+    if (last) { state.nr = null; saveLocal(); burst(); showVoucher(); }
+    else renderNumbers();
+  }, 1300);
+}
+
+// ---------- Round 2: presents ----------
+function toPresents() {
+  $("prizeLead").textContent = rating(state.moves) + (state.mine ? " Your score is already locked in, so unwrap any present to see your title again." : " Each present hides your festive title.");
+  const box = $("prizes"); box.innerHTML = "";
+  for (let k = 0; k < 3; k++) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "prize"; b.id = "prize-" + k;
+    b.setAttribute("aria-label", "Present " + (k + 1));
+    b.innerHTML = '<div class="inner"><div class="side back"><span>?</span></div><div class="side front"></div></div>';
+    b.addEventListener("click", () => unwrap(k));
+    box.appendChild(b);
+  }
+  show("prize");
+}
+async function unwrap(k) {
+  if (lock) return; lock = true;
+  const first = !state.mine;
+  if (first) {
+    state.mine = { prize: pickPrize(), code: makeCode(), flips: state.moves, ms: state.ms, at: Date.now() };
+    saveLocal();
+  }
+  const pz = PRIZES[state.mine.prize], el = $("prize-" + k);
+  el.querySelector(".front").innerHTML = ICONS[pz.icon] + '<span class="name">' + pz.name + "</span>";
+  el.classList.add("up");
+  document.querySelectorAll(".prize").forEach((c, j) => { if (j !== k) c.classList.add("dim"); });
+  if (first) burst();
+  setTimeout(() => { lock = false; showVoucher(); }, 1400);
+}
+function showVoucher() {
+  const m = state.mine, pz = PRIZES[m.prize];
+  $("t-won").textContent = pz.name; $("wonBlurb").textContent = pz.blurb;
+  $("vName").textContent = state.name || "Guest"; $("vCode").textContent = m.code;
+  $("vMoves").textContent = m.flips + " · " + fmt1(m.ms);
+  $("tbRow").hidden = !state.tb;
+  if (state.tb) $("vTb").textContent = fmtN(state.tb.total);
+  $("tbBtn").hidden = !!state.tb; $("tbConfirm").hidden = true;
+  $("tbBtn").textContent = state.nr ? "Continue round 2" : "Play round 2 (bingo finishers)";
+  $("lockNote").textContent = state.tb ? "Both scores are locked in. Playing again for fun won’t change them." : "Your round 1 score is locked in. Playing again for fun won’t change it.";
+  show("won");
+}
+
+// ---------- Flip-off host view ----------
+function setCount(n) { count = Math.max(1, Math.min(60, n)); $("bigNum").textContent = count; }
+function reveal(round) {
+  const r2 = round === 2;
+  const name = $(r2 ? "winner2Input" : "winnerInput").value.trim() || "Our winner";
+  $("revealIcon").innerHTML = r2 ? ICONS.pizza : ICONS.glass;
+  $("revealKicker").textContent = r2 ? "Round 2 · top of the numbers" : "Round 1 · top of the pecking order";
+  $("revealName").textContent = name;
+  $("revealStats").textContent = r2 ? "Wins a free pizza. Cheers!" : ($("hasBingo").checked ? "Wins a free drink of their choice. Cheers!" : "Wins a free soft drink. Cheers!");
+  $("reveal").classList.add("on"); $("revealClose").focus(); burst();
+}
+
+// ---------- Confetti: one moment, on a prize or the winner reveal ----------
+function burst() {
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const cv = $("confetti"), ctx = cv.getContext("2d"), dpr = window.devicePixelRatio || 1;
+  cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const cols = ["#C8423A", "#F2C14E", "#9FD8B8", "#FBF6EC"];
+  const bits = Array.from({ length: 140 }, () => ({ x: innerWidth / 2, y: innerHeight * 0.45, vx: (Math.random() - 0.5) * 14, vy: -Math.random() * 13 - 4, r: Math.random() * 7 + 3, c: cols[Math.floor(Math.random() * cols.length)], a: Math.random() * 6 }));
+  let t = 0;
+  (function step() {
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    bits.forEach(b => { b.vy += 0.35; b.x += b.vx; b.y += b.vy; b.a += 0.2; ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.a); ctx.fillStyle = b.c; ctx.fillRect(-b.r / 2, -b.r / 4, b.r, b.r / 2); ctx.restore(); });
+    if (++t < 120) requestAnimationFrame(step); else ctx.clearRect(0, 0, innerWidth, innerHeight);
+  })();
+}
+
+// ---------- Start ----------
+function start() {
+  const saved = loadLocal();
+  if (saved) { state.name = saved.name || ""; if (saved.mine && validPlay(saved.mine)) state.mine = saved.mine; if (saved.tb && typeof saved.tb.total === "number") state.tb = saved.tb; if (saved.nr && Array.isArray(saved.nr.log) && typeof saved.nr.total === "number" && !state.tb) state.nr = saved.nr; }
+  $("nameInput").value = state.name;
+  $("heroFace1").innerHTML = ICONS.ham; $("heroFace2").innerHTML = ICONS.chook;
+  if (state.mine) $("startBtn").textContent = "See my score";
+  $("startBtn").addEventListener("click", () => {
+    const typed = $("nameInput").value.trim().slice(0, 24); if (typed) state.name = typed; saveLocal();
+    if (state.mine) { showVoucher(); return; }
+    startRound("main");
+  });
+  $("againBtn").addEventListener("click", () => { startRound("fun"); });
+  $("tbBtn").addEventListener("click", () => { $("tbConfirm").hidden = false; $("tbYes").focus(); });
+  $("tbNo").addEventListener("click", () => { $("tbConfirm").hidden = true; });
+  $("tbYes").addEventListener("click", () => { if (!state.tb) startNumbers(); });
+  $("revealBtn").addEventListener("click", () => reveal(1));
+  $("reveal2Btn").addEventListener("click", () => reveal(2));
+  $("revealClose").addEventListener("click", () => $("reveal").classList.remove("on"));
+  $("downBtn").addEventListener("click", () => setCount(count - 1));
+  $("upBtn").addEventListener("click", () => setCount(count + 1));
+  $("resetBtn").addEventListener("click", () => setCount(20));
+  window.addEventListener("hashchange", route);
+  route();
+}
+start();
+</script>
+</body>
+</html>
